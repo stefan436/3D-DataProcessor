@@ -31,7 +31,7 @@ Beispieldaten für dieses Projekt können unter https://geodaten.bayern.de/openg
 Es wird empfohlen, das Projekt in einer virtuellen Python-Umgebung zu installieren, um Konflikte mit anderen Systempaketen zu vermeiden.
 
 **1. Repository klonen:**  
-`git clone [https://github.com/stefan436/3D-DataProcessor.git](https://github.com/stefan436/3D-DataProcessor.git)`  
+`git clone https://github.com/stefan436/3D-DataProcessor.git`  
 `cd 3D-DataProcessor`
 
 **2. Virtuelle Umgebung erstellen und aktivieren:**
