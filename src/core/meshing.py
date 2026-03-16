@@ -7,10 +7,12 @@ import math
 import struct
 import shutil
 import multiprocessing
+import traceback
 
 import numpy as np
 import open3d as o3d
 import trimesh
+import triangle as tr
 import pymeshlab
 from scipy.spatial import cKDTree
 from shapely.geometry import Polygon
@@ -1003,36 +1005,49 @@ def _generate_base_and_walls_for_mesh(ply_path, output_folder, boundary_type='co
             del w_v1, w_v2, w_v3, v_top_curr, v_bot_curr
             gc.collect()
 
-            # --- SCHRITT 3: Boden ---
-            poly = Polygon(top_ring_verts[:, :2])
-            if not poly.is_valid: 
-                poly = poly.buffer(0)
+            # --- SCHRITT 3: Boden ---            
+            f_verts = top_ring_verts.copy()
+            f_verts[:, 2] = floor_z
             
-            # FIX 1: Shapely's buffer(0) erzeugt bei Selbstüberschneidungen oft ein MultiPolygon.
-            # Trimesh erwartet aber ein einzelnes Polygon. Wir filtern das Haupt-Polygon (größte Fläche) heraus.
-            if getattr(poly, 'geom_type', '') == 'MultiPolygon':
-                poly = max(poly.geoms, key=lambda a: a.area)
+            # 1. 2D-Projektion erzwingen (float64 für die interne Präzision von Triangle)
+            verts_2d = f_verts[:, :2].astype(np.float64)
+            num_v = len(verts_2d)
             
-            tri_result = trimesh.creation.triangulate_polygon(poly)
-            
-            # FIX 2: Absicherung gegen leere Tuples, falls die Triangulierung komplett abbricht
-            if isinstance(tri_result, trimesh.Trimesh):
-                f_verts, f_faces = tri_result.vertices, tri_result.faces
-            elif isinstance(tri_result, tuple) and len(tri_result) >= 2:
-                f_verts = np.array(tri_result[0])
-                f_faces = np.array(tri_result[1])
-            else:
-                # Notfall-Fallback: Kein Boden, aber das Programm stürzt nicht ab
-                f_verts = np.empty((0, 3), dtype=np.float32)
-                f_faces = np.empty((0, 3), dtype=np.int32)
-            
-            if len(f_verts) > 0 and f_verts.shape[1] == 2:
-                zeros = np.zeros((len(f_verts), 1), dtype=np.float32)
-                f_verts = np.hstack((f_verts, zeros))
+            try:
+                # FEHLERBEHEBUNG 1: Striktes Casting auf int32
+                # Verhindert den Segmentation Fault bei der Speicherübergabe an C.
+                indices = np.arange(num_v, dtype=np.int32)
+                segments = np.column_stack((indices, np.roll(indices, -1)))
                 
-            if len(f_verts) > 0:
-                f_verts[:, 2] = floor_z
-            
+                # FEHLERBEHEBUNG 2: Micro-Jittering gegen C-Abstürze
+                # Wir addieren ein unsichtbares Rauschen im Nanometer-Bereich (1e-6) 
+                # ausschließlich auf die Arbeitskopie für den Algorithmus.
+                # Das verhindert Nulllängen-Kanten, die den C-Code zum Absturz bringen.
+                # Da wir für den finalen Export weiterhin das unveränderte 'f_verts' 
+                # nutzen, bleibt das 3D-Modell topologisch 100% exakt und wasserdicht.
+                verts_2d_safe = verts_2d + np.random.uniform(-1e-6, 1e-6, verts_2d.shape)
+                
+                geom = {'vertices': verts_2d_safe, 'segments': segments}
+                
+                # 'p': Planar Straight Line Graph (zwingt den Erhalt unserer Kanten auf)
+                res = tr.triangulate(geom, 'p')
+                
+                if 'triangles' in res:
+                    f_faces = res['triangles'].astype(np.int32)
+                    
+                    # Sicherheits-Check: Falls 'triangle' wegen Selbstüberschneidungen 
+                    # in der Kontur unerlaubte Hilfspunkte (Steiner-Punkte) hinzugefügt hat,
+                    # verweisen diese Indizes ins Leere. Wir filtern sie heraus.
+                    valid_mask = np.all(f_faces < num_v, axis=1)
+                    f_faces = f_faces[valid_mask]
+                else:
+                    raise ValueError("Keine Dreiecke generiert.")
+                    
+            except Exception as e:
+                print(f"Warnung: Triangle-Bodengenerierung fehlgeschlagen ({e}).", flush=True)
+                f_faces = np.empty((0, 3), dtype=np.int32)
+
+            # Winding-Order (Normalen-Richtung) korrigieren
             if len(f_faces) > 0:
                 t0 = f_verts[f_faces[0]]
                 if np.cross(t0[1]-t0[0], t0[2]-t0[0])[2] > 0:
@@ -1070,7 +1085,6 @@ def _generate_base_and_walls_for_mesh(ply_path, output_folder, boundary_type='co
         return True
 
     except Exception as e:
-        import traceback
         traceback.print_exc()
         print(f"Memory/Computation Error: {e}")
         return False

@@ -20,6 +20,7 @@ pymeshlab==2025.7
 trimesh==4.11.0
 vispy==0.16.1
 mapbox-earcut==2.0.0
+triangle==20250106
 
 # Visualization & System
 matplotlib==3.10.8
