@@ -1,0 +1,29 @@
+# GUI & Styling
+PyQt6
+
+# Core & Math
+numpy>=2.0.0
+scipy
+pandas
+networkx
+
+# Geo-Processing
+laspy
+rasterio
+pyproj
+shapely
+
+# 3D & Meshing
+open3d
+pymeshlab
+trimesh
+vispy
+triangle
+
+# Visualization & System
+matplotlib
+psutil
+tqdm
+
+# Build Tools
+pyinstaller
