@@ -1,6 +1,6 @@
 # 🏔️ 3D-DataProcessor
 
-![Python Version](https://img.shields.io/badge/python-3.11-blue.svg)
+![Python Version](https://img.shields.io/badge/python-3.12-blue.svg)
 ![License](https://img.shields.io/badge/license-MIT-green.svg)
 ![GUI](https://img.shields.io/badge/GUI-PyQt6-orange)
 ![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)

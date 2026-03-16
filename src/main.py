@@ -1,5 +1,7 @@
 # src/main.py
 
+print("Starting Imports...", flush=True)
+
 import os
 import sys
 import multiprocessing
@@ -10,12 +12,12 @@ os.environ["VISPY_BACKEND"] = "pyqt6"
 os.environ['QT_API'] = 'pyqt6'
 from PyQt6.QtWidgets import QApplication
 from PyQt6.QtCore import Qt
-import qdarktheme
 
 from config.settings import APP_STYLE
-from gui.main_window import HeightProfileApp
+from gui.main_window import HeightProfileApp, apply_native_dark_palette
 
 if __name__ == "__main__":
+    print("Starting HeightProfilesApp...", flush=True)
     # Unter Linux ist 'spawn' viel sicherer für GUI-Apps als 'fork'
     try:
         multiprocessing.set_start_method('spawn', force=True)
@@ -30,9 +32,11 @@ if __name__ == "__main__":
 
     app = QApplication(sys.argv)
     
-    qdarktheme.setup_theme(theme="dark", corner_shape="sharp")
+    # 1. Native Palette setzen (ersetzt qdarktheme)
+    apply_native_dark_palette(app)
     
-    app.setStyleSheet(app.styleSheet() + APP_STYLE)
+    # 2. Deinen eigenen Style (APP_STYLE) darüberlegen
+    app.setStyleSheet(APP_STYLE)
     
     try:
         window = HeightProfileApp()

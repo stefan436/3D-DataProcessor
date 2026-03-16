@@ -10,6 +10,7 @@ from PyQt6.QtWidgets import (QApplication, QMainWindow, QWidget, QVBoxLayout,
                              QFileDialog, QPlainTextEdit, QSplitter,
                              QMessageBox, QFrame, QGroupBox, QComboBox, QLineEdit)
 from PyQt6.QtCore import Qt, pyqtSignal, QTimer, QSize
+from PyQt6.QtGui import QPalette, QColor
 from PyQt6.QtGui import QIcon, QTextCursor, QFont
 
 
@@ -48,6 +49,26 @@ from core.utils import print_npz_metadata_structure
 from visualization.plot_2d import render_2d_elevation_plot
 from visualization.view_3d import render_interactive_3d_scatter_plot, render_interactive_3d_surface_plot
 
+def apply_native_dark_palette(app):
+    """Setzt ein stabiles, natives Dark Theme ohne externe Abhängigkeiten."""
+    app.setStyle("Fusion") # Fusion ist das stabilste plattformübergreifende Qt-Base-Theme
+    
+    palette = QPalette()
+    palette.setColor(QPalette.ColorRole.Window, QColor(30, 30, 30))
+    palette.setColor(QPalette.ColorRole.WindowText, Qt.GlobalColor.white)
+    palette.setColor(QPalette.ColorRole.Base, QColor(37, 37, 38))
+    palette.setColor(QPalette.ColorRole.AlternateBase, QColor(45, 45, 45))
+    palette.setColor(QPalette.ColorRole.ToolTipBase, Qt.GlobalColor.white)
+    palette.setColor(QPalette.ColorRole.ToolTipText, Qt.GlobalColor.white)
+    palette.setColor(QPalette.ColorRole.Text, Qt.GlobalColor.white)
+    palette.setColor(QPalette.ColorRole.Button, QColor(62, 62, 66))
+    palette.setColor(QPalette.ColorRole.ButtonText, Qt.GlobalColor.white)
+    palette.setColor(QPalette.ColorRole.BrightText, Qt.GlobalColor.red)
+    palette.setColor(QPalette.ColorRole.Link, QColor(42, 130, 218))
+    palette.setColor(QPalette.ColorRole.Highlight, QColor(74, 101, 114)) # Dein Blau: #4a6572
+    palette.setColor(QPalette.ColorRole.HighlightedText, Qt.GlobalColor.white)
+    
+    app.setPalette(palette)
 
 class HeightProfileApp(QMainWindow):
     def __init__(self):

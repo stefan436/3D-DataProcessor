@@ -1,7 +1,6 @@
 # GUI & Styling
 PyQt6==6.10.2
 pyqt6_sip==13.10.2
-pyqtdarktheme==2.1.0
 
 # Core & Math
 numpy==2.4.3

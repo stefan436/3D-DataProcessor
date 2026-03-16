@@ -314,10 +314,15 @@ def merge_npz_datasets(input_path, output_path):
                 if ref_type == 'grid':
                     rows, cols = curr['data'].shape
                     x_off, y_off = curr['meta'][0], curr['meta'][1]
+                    
+                    # FIX: Sortierung fängt negative Auflösungen ab
+                    ex_x = sorted([x_off, x_off + cols * ref_res_x])
+                    ex_y = sorted([y_off, y_off + rows * ref_res_y])
+                    
                     valid_files_data.append({
                         'path': f, 'meta': curr['meta'], 'rows': rows, 'cols': cols,
-                        'x_min': x_off, 'x_max': x_off + cols * ref_res_x,
-                        'y_min': y_off, 'y_max': y_off + rows * ref_res_y
+                        'x_min': ex_x[0], 'x_max': ex_x[1],
+                        'y_min': ex_y[0], 'y_max': ex_y[1]
                     })
                 else:
                     valid_files_data.append({'path': f})
@@ -362,11 +367,16 @@ def merge_npz_datasets(input_path, output_path):
         g_y_min = min(d['y_min'] for d in valid_files_data)
         g_y_max = max(d['y_max'] for d in valid_files_data)
 
-        total_cols = int(np.ceil((g_x_max - g_x_min) / ref_res_x))
-        total_rows = int(np.ceil((g_y_max - g_y_min) / ref_res_y))
+        # FIX 1: Absolute Werte für Array-Dimensionen
+        total_cols = int(np.ceil((g_x_max - g_x_min) / abs(ref_res_x)))
+        total_rows = int(np.ceil((g_y_max - g_y_min) / abs(ref_res_y)))
 
         full_grid = np.full((total_rows, total_cols), np.nan, dtype=np.float32)
         full_colors = np.full((total_rows, total_cols, 3), 0.0, dtype=np.float32) if ref_has_color else None
+
+        # FIX 2: Der Ursprung ist bei negativer Y-Auflösung "oben" (Max Y)
+        new_x_off = g_x_min if ref_res_x > 0 else g_x_max
+        new_y_off = g_y_min if ref_res_y > 0 else g_y_max
 
         for item in tqdm(valid_files_data, desc="Stitching"):
             loaded = np.load(item['path'], allow_pickle=True)
@@ -374,8 +384,10 @@ def merge_npz_datasets(input_path, output_path):
             c_chunk = loaded['colors'] if ref_has_color else None
             meta_chunk = loaded['meta']
 
-            col_start = int(round((meta_chunk[0] - g_x_min) / ref_res_x))
-            row_start = int(round((meta_chunk[1] - g_y_min) / ref_res_y))
+            # FIX 3: Berechnung relativ zum dynamischen Ursprung
+            col_start = int(round((meta_chunk[0] - new_x_off) / ref_res_x))
+            row_start = int(round((meta_chunk[1] - new_y_off) / ref_res_y))
+            
             chunk_rows, chunk_cols = z_chunk.shape
             row_end = min(row_start + chunk_rows, total_rows)
             col_end = min(col_start + chunk_cols, total_cols)
@@ -390,7 +402,8 @@ def merge_npz_datasets(input_path, output_path):
                 if full_colors is not None and c_chunk is not None:
                      full_colors[row_start:row_end, col_start:col_end][mask] = c_chunk[:eff_rows, :eff_cols][mask]
 
-        new_meta = np.array([g_x_min, g_y_min, ref_res_x, ref_res_y])
+        # FIX 4: Neue Metadaten mit dem korrekten Ursprung
+        new_meta = np.array([new_x_off, new_y_off, ref_res_x, ref_res_y])
         _save_data_to_npz(output_path, full_grid, new_meta, 'grid', full_colors, attributes=ref_attributes)
     print(f"Gespeichert: {output_path}", flush=True)
 
