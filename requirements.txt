@@ -23,7 +23,6 @@ freetype-py==2.5.1                  # via vispy
 hsluv==5.0.4                        # via vispy
 idna==3.11                          # via requests
 importlib-metadata==8.7.1           # via dash
-ipython==9.11.0                     # via ipywidgets
 ipython-pygments-lexers==1.1.1      # via ipython
 ipywidgets==8.1.8                   # via open3d
 itsdangerous==2.2.0                 # via flask
