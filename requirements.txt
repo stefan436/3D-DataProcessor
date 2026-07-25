@@ -37,7 +37,6 @@ laspy==2.6.1                        # via -r requirements.in
 markupsafe==3.0.3                   # via flask, jinja2, werkzeug
 matplotlib==3.10.8                  # via -r requirements.in
 matplotlib-inline==0.2.1            # via ipython
-msvc-runtime==14.44.35112           # via pymeshlab
 narwhals==2.18.0                    # via plotly
 nbformat==5.10.4                    # via open3d
 nest-asyncio==1.6.0                 # via dash
